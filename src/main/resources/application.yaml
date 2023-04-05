@@ -5,7 +5,7 @@ ChatGPT:
   chartGPTUrl: https://api.openai.com/v1/chat/completions
   variables:
     # API KEY
-    apiKey: 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
+    apiKey: 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
     # ChartGPT 模型
     model: gpt-3.5-turbo
     # chartGPT随机参数
