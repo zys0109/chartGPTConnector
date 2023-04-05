@@ -1,0 +1,15 @@
+server:
+  port: 8080
+ChatGPT:
+  # opennAI接口地址
+  chartGPTUrl: https://api.openai.com/v1/chat/completions
+  variables:
+    # API KEY
+    apiKey: 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
+    # ChartGPT 模型
+    model: gpt-3.5-turbo
+    # chartGPT随机参数
+    temperature: 0.5
+    contentType: application/json
+    role: user
+
