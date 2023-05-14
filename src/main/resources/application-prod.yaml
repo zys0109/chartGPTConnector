@@ -1,0 +1,34 @@
+ChatGPT:
+  # opennAI接口地址
+  chartGPTUrl: https://api.openai.com/v1/chat/completions
+  variables:
+    # API KEY 已经废弃 新方式从数据库读取
+    apiKey: 填写你自己的apiKey
+    # ChartGPT 模型
+    model: gpt-3.5-turbo
+    # chartGPT随机参数
+    temperature: 0.5
+    contentType: application/json
+    role: user
+
+spring:
+  #数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: 0000
+    password: 0000..
+    url: jdbc:mysql://0.0.0.0:3306/mysql?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+
+  #redis配置
+  redis:
+    host: 0.0.0.0
+    database: 0
+    port: 6379
+    password: 00000..
+    jedis:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+    timeout: 20000ms

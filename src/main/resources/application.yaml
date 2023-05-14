@@ -1,15 +1,7 @@
+# 应用服务 WEB 访问端口
 server:
   port: 8080
-ChatGPT:
-  # opennAI接口地址
-  chartGPTUrl: https://api.openai.com/v1/chat/completions
-  variables:
-    # API KEY
-    apiKey: 填写你自己的apiKey
-    # ChartGPT 模型
-    model: gpt-3.5-turbo
-    # chartGPT随机参数
-    temperature: 0.5
-    contentType: application/json
-    role: user
-
+#spring 配置
+spring:
+  profiles:
+    active: prod
