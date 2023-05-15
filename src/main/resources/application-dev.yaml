@@ -10,21 +10,26 @@ ChatGPT:
     temperature: 0.5
     contentType: application/json
     role: user
+    #当前接口支持的上下文长度
+    contextLength: 36
+#微信小程序登录工具配置
+WeChartLoginTool:
+  userinfoUrl: http://0000:8888/GPTAuthLogin/user/userinfo
 
 spring:
   #数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: 00000
-    password: 00000..
-    url: jdbc:mysql://localhost:3306/mysql?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: 0000
+    password: 0000..
+    url: jdbc:mysql://0000:3306/000?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
 
   #redis配置
   redis:
-    host: 0.0.0.0
+    host: 000
     database: 0
     port: 6379
-    password: 00000..
+    password: 000..
     jedis:
       pool:
         max-active: 8

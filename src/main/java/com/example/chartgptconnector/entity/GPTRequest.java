@@ -24,13 +24,13 @@ public class GPTRequest {
     //回答
     private String replyStr;
     //用户openId用于实现上下文关联对话
-    private String openId;
+    private String token;
 
-    public String getOpenId() {
-        return openId;
+    public String getToken() {
+        return token;
     }
 
-    public void setOpenId(String openId) {
-        this.openId = openId;
+    public void setToken(String token) {
+        this.token = token;
     }
 }
