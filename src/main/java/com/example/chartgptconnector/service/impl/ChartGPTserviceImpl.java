@@ -76,8 +76,9 @@ public class ChartGPTserviceImpl implements ChartGPTservice {
             log.info("响应报文体:" + resStr);
             GPTResponse gptResponse = JSONUtil.toBean(resStr, GPTResponse.class);
             GPTUtiles.apikeyIsEffective(api_key, apiKeyMapper, httpResponse.getStatus());
-            log.info("本地封装接口返回值:" + gptResponse.getChoices().get(0).getMessage().getContent());
-            askAiResponse = gptResponse.getChoices().get(0).getMessage().getContent();
+            log.info("本地封装接口过滤关键字前返回值:" + gptResponse.getChoices().get(0).getMessage().getContent());
+            askAiResponse = GPTUtiles.stringfilter(gptResponse.getChoices().get(0).getMessage().getContent());
+            log.info("本地封装接口过滤关键字后返回值:" + askAiResponse);
         } catch (Exception exception) {
             log.info("调用openAI接口异常:" + exception.toString());
             askAiResponse = "调用接口发生异常，请联系管理员！！！";
@@ -168,10 +169,11 @@ public class ChartGPTserviceImpl implements ChartGPTservice {
                 log.info("响应报文体:" + resStr);
                 GPTResponse gptResponse = JSONUtil.toBean(resStr, GPTResponse.class);
                 GPTUtiles.apikeyIsEffective(api_key, apiKeyMapper, httpResponse.getStatus());
-                log.info("本地封装接口返回值:" + gptResponse.getChoices().get(0).getMessage().getContent());
+                log.info("本地封装接口过滤关键字前返回值:" + gptResponse.getChoices().get(0).getMessage().getContent());
                 messageList.add(gptResponse.getChoices().get(0).getMessage());
                 stringRedisTemplate.opsForValue().set(token, messageList.toString(), 1, TimeUnit.DAYS);
-                askAiResponse = gptResponse.getChoices().get(0).getMessage().getContent();
+                askAiResponse = GPTUtiles.stringfilter(gptResponse.getChoices().get(0).getMessage().getContent());
+                log.info("本地封装接口过滤关键字后返回值:" + askAiResponse);
             }
         } catch (Exception exception) {
             log.info("调用openAI接口异常:" + exception.toString());
