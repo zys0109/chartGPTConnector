@@ -1,9 +1,9 @@
 package com.example.chartgptconnector.utile;
 
-import cn.hutool.extra.ssh.JschUtil;
 import cn.hutool.http.Header;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.example.chartgptconnector.entity.ApiKey;
@@ -12,8 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
 @Slf4j
@@ -26,6 +26,9 @@ public class GPTUtiles {
 
     private static String filterString;
 
+    //apiKey个数
+    private static int apiKeyCount;
+
     @Value("${WeChartLoginTool.userinfoUrl}")
     public void setUserInfoUrl(String url) {
         userInfoUrl = url;
@@ -36,25 +39,26 @@ public class GPTUtiles {
         filterString = filterStringTemp;
     }
 
+    @Value("${ChatGPT.apiKeyCount}")
+    public void setApiKeyCount(int apiKeyCountTemp) {
+        apiKeyCount = apiKeyCountTemp;
+    }
+
     /**
      * 轮询获取apiKey
      *
      * @return api_key
      */
     public synchronized static String getApiKey(ApiKeyMapper apiKeyMapper) throws Exception {
-        for (int i = 1; i <= 7; i++) {
+        while (id <= apiKeyCount){
             log.info("当前apiKey的id:" + id);
             apiKey = apiKeyMapper.selectById(id);
             log.info("当前apiKey:" + apiKey.toString());
-            if (!apiKey.isEffective() && id <= 7) {
-                id++;
-            } else {
-                id++;
+            if (apiKey.isEffective()){
+                id = (id % apiKeyCount) + 1;
                 break;
             }
-        }
-        if (id == 8) {
-            id = 1;
+            id = (id % apiKeyCount) + 1;
         }
         return apiKey.getApiKey().toString();
     }
@@ -62,9 +66,11 @@ public class GPTUtiles {
     /**
      * 判断当前apiKey是否有效
      */
-    public synchronized static void apikeyIsEffective(String api_key, ApiKeyMapper apiKeyMapper, int status) throws Exception {
+    public synchronized static void apikeyIsEffective(String api_key, ApiKeyMapper apiKeyMapper, int status, JSONObject jsonObject) throws Exception {
         log.info("当前请求状态码:" + status);
-        if (status == 429) {
+        if (status == 200){
+            log.info("chartGPT响应成功["+api_key+"]状态不用更新");
+        }else if (status == 429 && "You exceeded your current quota, please check your plan and billing details.".equals(jsonObject.getJSONObject("error").getStr("message")) ) {
             apiKey.setEffective(false);
             apiKeyMapper.update(apiKey, new UpdateWrapper<ApiKey>().eq("api_key", api_key));
             log.info("chartGPT响应失败[" + api_key + "]状态更新完成");
@@ -122,4 +128,5 @@ public class GPTUtiles {
         }
         return response;
     }
+
 }

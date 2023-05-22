@@ -14,24 +14,27 @@ ChatGPT:
     contextLength: 36
   #需要被过滤替换的字符串
   Stringfilter: OpenAI|ChartGPT|chartGPT|GPT|
+  #apiKey个数
+  apiKeyCount: 7
+
 #微信小程序登录工具配置
 WeChartLoginTool:
-  userinfoUrl: https://00000:8080/GPTAuthLogin/user/userinfo
+  userinfoUrl: https://0000:8080/GPTAuthLogin/user/userinfo
 
 spring:
   #数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: 0000
+    username: 000
     password: 0000..
-    url: jdbc:mysql://00000:3306/0000?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://0000:3306/00000?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
 
   #redis配置
   redis:
-    host: 00000
+    host: 0000
     database: 0
     port: 6379
-    password: 00000..
+    password: 0000..
     jedis:
       pool:
         max-active: 8

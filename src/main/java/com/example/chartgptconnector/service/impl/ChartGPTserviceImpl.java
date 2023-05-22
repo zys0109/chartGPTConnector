@@ -10,17 +10,25 @@ import com.example.chartgptconnector.entity.GPTResponse;
 import com.example.chartgptconnector.mapper.ApiKeyMapper;
 import com.example.chartgptconnector.service.ChartGPTservice;
 import com.example.chartgptconnector.utile.GPTUtiles;
+import com.example.chartgptconnector.utile.SseEmitterUTF8;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Slf4j
@@ -44,6 +52,11 @@ public class ChartGPTserviceImpl implements ChartGPTservice {
     private ApiKeyMapper apiKeyMapper;
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+    private SseEmitter emitter;
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(10);
+    private String streamContext;
+
+
 
 
     /**
@@ -75,7 +88,7 @@ public class ChartGPTserviceImpl implements ChartGPTservice {
             String resStr = httpResponse.body();
             log.info("响应报文体:" + resStr);
             GPTResponse gptResponse = JSONUtil.toBean(resStr, GPTResponse.class);
-            GPTUtiles.apikeyIsEffective(api_key, apiKeyMapper, httpResponse.getStatus());
+            GPTUtiles.apikeyIsEffective(api_key, apiKeyMapper, httpResponse.getStatus(),JSONUtil.parseObj(resStr));
             log.info("本地封装接口过滤关键字前返回值:" + gptResponse.getChoices().get(0).getMessage().getContent());
             askAiResponse = GPTUtiles.stringfilter(gptResponse.getChoices().get(0).getMessage().getContent());
             log.info("本地封装接口过滤关键字后返回值:" + askAiResponse);
@@ -168,7 +181,7 @@ public class ChartGPTserviceImpl implements ChartGPTservice {
                 String resStr = httpResponse.body();
                 log.info("响应报文体:" + resStr);
                 GPTResponse gptResponse = JSONUtil.toBean(resStr, GPTResponse.class);
-                GPTUtiles.apikeyIsEffective(api_key, apiKeyMapper, httpResponse.getStatus());
+                GPTUtiles.apikeyIsEffective(api_key, apiKeyMapper, httpResponse.getStatus(),JSONUtil.parseObj(resStr));
                 log.info("本地封装接口过滤关键字前返回值:" + gptResponse.getChoices().get(0).getMessage().getContent());
                 messageList.add(gptResponse.getChoices().get(0).getMessage());
                 stringRedisTemplate.opsForValue().set(token, messageList.toString(), 1, TimeUnit.DAYS);
@@ -186,35 +199,83 @@ public class ChartGPTserviceImpl implements ChartGPTservice {
     /**
      * 支持上下文关联流式返回前端
      *
-     * @param prompt
-     * @param token
-     * @param outputStream
      */
-    @Override
-    public void askAiContextStream(String prompt, String token, OutputStream outputStream) {
+
+    public void run() {
         log.info("开始执行askAiContextStream方法！！！");
+        log.info("开始执行askAi方法！！！");
+        JSONObject requstBodyJson = new JSONObject();
+        requstBodyJson.put("model", model);
+        JSONObject messageJson = new JSONObject();
+        messageJson.put("role", role);
+        messageJson.put("content", streamContext);
+        JSONArray messageList = new JSONArray();
+        messageList.add(messageJson);
+        requstBodyJson.put("messages", messageList);
+        requstBodyJson.put("temperature", temperature);
+        requstBodyJson.put("stream",true);
+        log.info("请求地址:" + openAiUrl);
+        log.info("请求报文体:" + JSONUtil.toJsonStr(requstBodyJson));
+
         try {
-            String anser = askAiContext(prompt, token);
-            char[] srt = anser.toCharArray();
-            log.info("开始流式输出文本！！！");
-            for (int i = 0; i < srt.length; i++) {
-                char temp = srt[i];
-                outputStream.write(String.valueOf(temp).getBytes(Charset.defaultCharset()));
-                outputStream.flush();
-                Thread.sleep(40);
-            }
+            api_key = GPTUtiles.getApiKey(apiKeyMapper);
+            log.info("当前api_key:" + api_key);
+            //HttpResponse httpResponse = HttpUtil.createPost(openAiUrl).header(Header.AUTHORIZATION, "Bearer " + api_key).header("Content-Type", contentType).body(JSONUtil.toJsonStr(requstBodyJson)).execute();
+            //log.info("httpResponse:" + httpResponse);
+            HttpURLConnection connection = null;
+            InputStream is = null;
+            BufferedReader br = null;
+            StringBuffer result = new StringBuffer();
+            URL url = new URL(openAiUrl);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type",contentType);
+            connection.setRequestProperty("Authorization","Bearer " + api_key);
+            connection.setDoInput(true);
+            connection.setDoOutput(true);
+            OutputStream outputStream = connection.getOutputStream();
+            outputStream.write(requstBodyJson.toString().getBytes());
+            outputStream.flush();
             outputStream.close();
-            log.info("流式文本输出完成！！！");
-        } catch (Exception e) {
-            log.info("接口调用失败联系管理员");
-        } finally {
-            if (outputStream != null) {
-                try {
-                    outputStream.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+
+            InputStream inputStream = connection.getInputStream();
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+            Pattern contentPattern = Pattern.compile("\"content\":\"(.*?)\"}");
+            log.info("开始输出返回值到控制台");
+            while ((line = bufferedReader.readLine()) != null){
+                if (StringUtils.hasLength(line)){
+                    Matcher matcher = contentPattern.matcher(line);
+                    if (matcher.find()){
+                        String content = matcher.group(1);
+                        emitter.send(SseEmitter.event().name("d").data("{"+content+"}"));
+                    }
                 }
+                //Thread.sleep(100);
             }
+            log.info("输出返回值到控制台结束");
+            emitter.complete();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }finally {
+            emitter.complete();
         }
     }
+
+    /**
+     * 对话，异步的，在新的线程的
+     */
+    public SseEmitter doConverse() {
+        executorService.execute(this::run);
+        return emitter;
+    }
+
+    @Override
+    public SseEmitter askAiContextStream(String prompt) {
+        this.streamContext = prompt;
+        emitter = new SseEmitterUTF8(0L);
+        doConverse();
+        return emitter;
+    }
+
 }

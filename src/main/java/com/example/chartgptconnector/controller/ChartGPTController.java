@@ -5,6 +5,8 @@ import com.example.chartgptconnector.entity.GPTRequest;
 import com.example.chartgptconnector.service.ChartGPTservice;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -25,18 +27,10 @@ public class ChartGPTController {
 
     }
 
-    @GetMapping ("/askAiStream")
-    public void askAiStream(String askStr, HttpServletResponse response){
-        log.info("askAiStream接口请求参数:" + askStr);
-        response.setContentType("text/event-stream");
-        // 禁用缓存
-        response.setCharacterEncoding("UTF-8");
-        response.setHeader("Cache-Control", "no-cache");
-        try {
-            chartGPTservice.askAiStream(askStr, response.getOutputStream());
-        } catch (IOException e) {
-            log.info("askAiStream接口调用异常:"+e.toString());
-        }
+    @PostMapping("/askAiStream")
+    public SseEmitter askAiStream(@RequestBody GPTRequest gptRequest){
+        log.info("askAiStream接口请求参数:" + gptRequest.getAskStr());
+        return null;
     }
 
     @PostMapping("/askAiContext")
@@ -48,16 +42,8 @@ public class ChartGPTController {
     }
 
     @GetMapping ("/askAiContextStream")
-    public void askAiContextStream(String askStr,String token, HttpServletResponse response){
+    public SseEmitter askAiContextStream(String askStr){
         log.info("askAiContextStream接口请求参数:" + askStr);
-        response.setContentType("text/event-stream");
-        // 禁用缓存
-        response.setCharacterEncoding("UTF-8");
-        response.setHeader("Cache-Control", "no-cache");
-        try {
-            chartGPTservice.askAiContextStream(askStr, token,response.getOutputStream());
-        } catch (IOException e) {
-            log.info("askAiContextStream接口调用异常:"+e.toString());
-        }
+        return chartGPTservice.askAiContextStream(askStr);
     }
 }
