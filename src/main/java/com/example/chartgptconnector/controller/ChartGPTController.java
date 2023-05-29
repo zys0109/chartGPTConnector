@@ -41,9 +41,39 @@ public class ChartGPTController {
         return new JSONObject().put("replyStr",replyStr);
     }
 
-    @GetMapping ("/askAiContextStream")
-    public SseEmitter askAiContextStream(String askStr){
+    @GetMapping ("/askAiContextStreamSSE")
+    public SseEmitter askAiContextStreamSSE(String askStr){
         log.info("askAiContextStream接口请求参数:" + askStr);
-        return chartGPTservice.askAiContextStream(askStr);
+        return chartGPTservice.askAiContextStreamSSE(askStr);
+    }
+
+    @GetMapping ("/askAiContextStream")
+    public void askAiContextStream(String askStr,String token,HttpServletResponse response){
+        log.info("askAiContextStream接口请求参数:" + askStr);
+       /** response.setHeader("Access-Control-Allow-Credentials","true");
+        response.setHeader("Transfer-Encoding","chunked");
+        response.setHeader("Cache-Control","no-cache");
+        response.setHeader("Access-Control-Allow-Origin","*");
+        response.setHeader("Access-Control-Allow-Headers","Content-Type");
+        response.setHeader("Connection","keep-alive");
+        */
+
+        response.setContentType("text/event-stream");
+        response.setCharacterEncoding("UTF-8");
+        // 禁用缓存
+        response.setHeader("Cache-Control", "no-cache");
+        try {
+            chartGPTservice.askAiContextStream(askStr,token,response.getOutputStream());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @PostMapping("/askAiPictureSearch")
+    public JSONObject askAiPictureSearch(@RequestBody GPTRequest gptRequest) {
+        log.info("askAiPictureSearch接口请求参数:" + gptRequest.getAskStr());
+        String replyStr = chartGPTservice.askAiPictureSearch(gptRequest.getAskStr(),gptRequest.getToken());
+        gptRequest.setReplyStr(replyStr);
+        return new JSONObject().put("replyStr",replyStr);
     }
 }

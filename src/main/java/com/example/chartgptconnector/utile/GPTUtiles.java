@@ -11,10 +11,21 @@ import com.example.chartgptconnector.mapper.ApiKeyMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -28,6 +39,14 @@ public class GPTUtiles {
 
     //apiKey个数
     private static int apiKeyCount;
+
+
+    private static  String contentType;
+
+    @Value("${ChatGPT.variables.contentType}")
+    public void setContentType(String contentTypeTemp) {
+        contentType = contentTypeTemp;
+    }
 
     @Value("${WeChartLoginTool.userinfoUrl}")
     public void setUserInfoUrl(String url) {
@@ -83,13 +102,14 @@ public class GPTUtiles {
      * @param token
      * @return
      */
-    public static Boolean authCheck(String token) throws Exception {
+    public static Boolean authCheck(String token) throws Exception{
         log.info("userInfoUrl:" + userInfoUrl + "?refresh=false");
-        HashMap<String, Object> map = new HashMap<>();
+        HashMap<String, String> map = new HashMap<>();
         map.put("refresh", "false");
-        HttpResponse response = HttpUtil.createGet(userInfoUrl).header(Header.AUTHORIZATION, "Bearer " + token).form(map).execute();
-        log.info("响应报文体" + response.body());
-        if ("0".equals(JSONUtil.parse(response.body()).getByPath("code").toString())) {
+        //HttpResponse response = HttpUtil.createGet(userInfoUrl).header(Header.AUTHORIZATION, "Bearer " + token).form(map).execute();
+        JSONObject responseBody = responseBody = GPTUtiles.httpToolGET(userInfoUrl, token, "?refresh=false");
+        log.info("响应报文体" + responseBody);
+        if ("0".equals(responseBody.getByPath("code").toString())) {
             log.info("被鉴权token为[" + token + "],鉴权结果:成功");
             return true;
         } else {
@@ -123,10 +143,48 @@ public class GPTUtiles {
         log.info("需要被过滤的字符串数组:"+filterStringArray.toString());
         for (String str : filterStringArray) {
             if (response.contains(str)){
-                response = response.replace(str,"大巨人AI");
+                response = response.replace(str,"BigMan");
             }
         }
         return response;
     }
 
+    public static JSONObject httpToolGET(String urlString, String token,String parameter) throws Exception{
+        log.info("开始调用httpToolGET！！！");
+        HttpURLConnection connection = null;
+        URL url = new URL(urlString+parameter);
+        connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Authorization","Bearer " + token);
+        connection.setDoInput(true);
+        connection.setDoOutput(true);
+        InputStream inputStream = connection.getInputStream();
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+        String line;
+        String content = "";
+        while ((line = bufferedReader.readLine()) != null){
+            if (StringUtils.hasLength(line)){
+                    content = content+line;
+                }
+            }
+        log.info("content:"+content);
+        return new JSONObject(content);
+    }
+
+    public static HttpURLConnection httpToolPOST(String urlString, String api_key,JSONObject requstBodyJson) throws Exception{
+        log.info("开始调用httpToolPOST！！！");
+        HttpURLConnection connection = null;
+        URL url = new URL(urlString);
+        connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type",contentType);
+        connection.setRequestProperty("Authorization","Bearer " + api_key);
+        connection.setDoInput(true);
+        connection.setDoOutput(true);
+        OutputStream outputStream = connection.getOutputStream();
+        outputStream.write(requstBodyJson.toString().getBytes());
+        outputStream.flush();
+        outputStream.close();
+        return connection;
+    }
 }

@@ -13,28 +13,28 @@ ChatGPT:
     #当前接口支持的上下文长度
     contextLength: 36
   #需要被过滤替换的字符串
-  Stringfilter: OpenAI|ChartGPT|chartGPT|GPT|
+  Stringfilter: Open|open|Chart|chart|
   #apiKey个数
   apiKeyCount: 7
 
 #微信小程序登录工具配置
 WeChartLoginTool:
-  userinfoUrl: https://0000:8080/GPTAuthLogin/user/userinfo
+  userinfoUrl: https://zhouyings.cloud:8080/GPTAuthLogin/user/userinfo
 
 spring:
   #数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: 000
-    password: 0000..
-    url: jdbc:mysql://0000:3306/00000?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: Zys0109..
+    url: jdbc:mysql://175.178.245.87:3306/chartGPTconnector?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
 
   #redis配置
   redis:
-    host: 0000
+    host: 175.178.245.87
     database: 0
     port: 6379
-    password: 0000..
+    password: Zys0109..
     jedis:
       pool:
         max-active: 8

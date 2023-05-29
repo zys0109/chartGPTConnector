@@ -8,5 +8,8 @@ public interface ChartGPTservice {
     String askAi(String prompt);
     void askAiStream(String prompt,OutputStream outputStream);
     String askAiContext(String prompt,String token);
-    SseEmitter askAiContextStream(String prompt);
+    SseEmitter askAiContextStreamSSE(String prompt);
+    void askAiContextStream(String prompt,String token,OutputStream responseOutputStream);
+    String askAiPictureSearch(String prompt,String token);
+
 }
